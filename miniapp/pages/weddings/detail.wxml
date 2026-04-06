@@ -1,0 +1,47 @@
+<view class="page stack">
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{loading}}" class="muted">加载中...</view>
+
+  <block wx:if="{{wedding}}">
+    <view class="card stack">
+      <view class="title">{{wedding.name}}</view>
+      <view class="muted">婚礼日期：{{wedding.weddingDate.slice(0, 10)}}</view>
+      <view class="muted">创建人：{{wedding.creatorName}}</view>
+      <view class="row">
+        <view class="tag">{{wedding.role === 'OWNER' ? '创建人' : '参与者'}}</view>
+        <view class="tag">{{taskSummary.completed}} / {{taskSummary.total}} 已完成</view>
+      </view>
+    </view>
+
+    <block wx:for="{{wedding.taskGroups}}" wx:key="key" wx:for-item="group">
+      <view class="card stack">
+        <view class="section-title">{{group.phase === 'WEDDING_DAY' ? '婚礼当天' : '前期筹备'}} · {{group.label}}</view>
+
+        <block wx:for="{{group.tasks}}" wx:key="id" wx:for-item="task">
+          <view class="task-item stack">
+            <view class="row task-header">
+              <view>
+                <view>{{task.title}}</view>
+                <view class="muted">负责人：{{task.owner}}</view>
+              </view>
+              <view class="tag {{task.status === 'COMPLETED' ? 'tag-success' : task.status === 'IN_PROGRESS' ? 'tag-progress' : ''}}">
+                {{task.status === 'COMPLETED' ? '已完成' : task.status === 'IN_PROGRESS' ? '进行中' : '待处理'}}
+              </view>
+            </view>
+            <view wx:if="{{task.description}}" class="muted">{{task.description}}</view>
+            <view wx:if="{{task.assignedUser}}" class="muted">分配给：{{task.assignedUser.username}}</view>
+            <view wx:if="{{task.scheduledAt}}" class="muted">时间：{{task.scheduledAt.replace('T', ' ').slice(0, 16)}}</view>
+            <picker
+              range="{{statusLabels}}"
+              value="{{task.statusIndex}}"
+              data-task-id="{{task.id}}"
+              bindchange="onTaskStatusChange"
+            >
+              <view class="button button-secondary">更新状态</view>
+            </picker>
+          </view>
+        </block>
+      </view>
+    </block>
+  </block>
+</view>

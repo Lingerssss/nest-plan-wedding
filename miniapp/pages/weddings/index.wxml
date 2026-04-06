@@ -1,0 +1,28 @@
+<view class="page stack">
+  <view class="card">
+    <view class="title">我的婚礼</view>
+    <view class="subtitle" wx:if="{{user}}">你好，{{user.displayName || user.username}}</view>
+    <button class="button button-secondary" bindtap="goToJoin">通过短 ID 加入婚礼</button>
+  </view>
+
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{loading}}" class="muted">加载中...</view>
+
+  <block wx:if="{{!loading && weddings.length}}">
+    <block wx:for="{{weddings}}" wx:key="id">
+      <view class="card stack" data-id="{{item.id}}" bindtap="goToDetail">
+        <view class="title">{{item.name}}</view>
+        <view class="muted">婚礼日期：{{item.weddingDate.slice(0, 10)}}</view>
+        <view class="muted">创建人：{{item.creatorName}}</view>
+        <view class="row">
+          <view class="tag">{{item.role === 'OWNER' ? '创建人' : '参与者'}}</view>
+          <view class="tag">{{item.taskSummary.completed}} / {{item.taskSummary.total}} 已完成</view>
+        </view>
+      </view>
+    </block>
+  </block>
+
+  <view wx:if="{{!loading && !weddings.length}}" class="card">
+    <view class="subtitle">还没有加入任何婚礼，可以先通过短 ID 加入。</view>
+  </view>
+</view>

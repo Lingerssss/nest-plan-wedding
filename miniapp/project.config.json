@@ -1,0 +1,13 @@
+{
+  "appid": "touristappid",
+  "projectname": "nest-plan-wedding-miniapp",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "./",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": false
+  }
+}

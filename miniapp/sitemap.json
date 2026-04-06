@@ -1,0 +1,9 @@
+{
+  "desc": "Nest Plan Wedding miniapp sitemap",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+.task-item {
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid #f3f4f6;
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-header {
+  align-items: flex-start;
+  justify-content: space-between;
+}
