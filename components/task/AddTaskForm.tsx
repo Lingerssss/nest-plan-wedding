@@ -10,7 +10,7 @@ interface AddTaskFormProps {
 }
 
 const PREPARATION_TIME_FRAMES = ['5个月', '3个月', '3周', '1周', '当天']
-const WEDDING_DAY_TIME_FRAMES = ['清晨', '接亲', '仪式', '宴席', '收尾']
+const WEDDING_DAY_TIME_FRAMES = ['新娘妆造', '新郎筹备', '接亲', '返家', '酒店准备', '典礼']
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : '创建任务失败'

@@ -1,8 +1,8 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { taskApi } from '@/lib/api'
-import type { TaskGroupDto, UpdateTaskInput } from '@/types/task'
+import type { TaskDto, TaskGroupDto, UpdateTaskInput } from '@/types/task'
 import TaskItem from './TaskItem'
 
 interface Participant {
@@ -21,20 +21,115 @@ function getPhaseLabel(phase: TaskGroupDto['phase']) {
   return phase === 'WEDDING_DAY' ? '婚礼当天安排' : '前期筹备'
 }
 
+function groupTasksForDisplay(tasks: TaskDto[]): TaskGroupDto[] {
+  const grouped = new Map<string, TaskGroupDto>()
+
+  for (const task of tasks) {
+    const key = `${task.phase}:${task.timeFrame}`
+    const existing = grouped.get(key)
+
+    if (existing) {
+      existing.tasks.push(task)
+      continue
+    }
+
+    grouped.set(key, {
+      key,
+      label: task.timeFrame,
+      phase: task.phase,
+      tasks: [task],
+    })
+  }
+
+  return Array.from(grouped.values())
+    .map((group) => ({
+      ...group,
+      tasks: [...group.tasks].sort((a, b) => {
+        const aTime = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0
+        const bTime = b.scheduledAt ? new Date(b.scheduledAt).getTime() : 0
+        return a.sortOrder - b.sortOrder || aTime - bTime || a.createdAt.localeCompare(b.createdAt)
+      }),
+    }))
+    .sort((a, b) => {
+      const phaseCompare = a.phase.localeCompare(b.phase)
+      if (phaseCompare !== 0) {
+        return phaseCompare
+      }
+
+      return a.tasks[0].sortOrder - b.tasks[0].sortOrder
+    })
+}
+
+function flattenTaskGroups(taskGroups: TaskGroupDto[]) {
+  return taskGroups.flatMap((group) => group.tasks)
+}
+
 export default function TaskList({
   taskGroups,
   isOwner,
   participants = [],
   onTaskUpdate,
 }: TaskListProps) {
-  const router = useRouter()
+  const [localTaskGroups, setLocalTaskGroups] = useState(taskGroups)
+
+  useEffect(() => {
+    setLocalTaskGroups(taskGroups)
+  }, [taskGroups])
+
+  const getParticipantById = (userId: string | null | undefined) => {
+    if (!userId) {
+      return null
+    }
+
+    const participant = participants.find((item) => item.id === userId)
+    return participant
+      ? {
+          id: participant.id,
+          username: participant.username,
+        }
+      : null
+  }
+
+  const applyOptimisticTaskUpdate = (currentTaskGroups: TaskGroupDto[], taskId: string, updates: UpdateTaskInput) => {
+    const nextTasks = flattenTaskGroups(currentTaskGroups).map((task) => {
+      if (task.id !== taskId) {
+        return task
+      }
+
+      const nextAssignedUser = updates.assignedUserId === undefined
+        ? task.assignedUser
+        : getParticipantById(updates.assignedUserId)
+
+      return {
+        ...task,
+        ...updates,
+        assignedUserId: updates.assignedUserId === undefined ? task.assignedUserId : updates.assignedUserId,
+        assignedUser: nextAssignedUser,
+        updatedAt: new Date().toISOString(),
+      }
+    })
+
+    return groupTasksForDisplay(nextTasks)
+  }
+
+  const applyConfirmedTaskUpdate = (currentTaskGroups: TaskGroupDto[], updatedTask: TaskDto) => {
+    const nextTasks = flattenTaskGroups(currentTaskGroups).map((task) =>
+      task.id === updatedTask.id ? updatedTask : task
+    )
+
+    return groupTasksForDisplay(nextTasks)
+  }
 
   const handleTaskUpdate = async (taskId: string, updates: UpdateTaskInput) => {
+    const previousTaskGroups = localTaskGroups
+    setLocalTaskGroups(applyOptimisticTaskUpdate(localTaskGroups, taskId, updates))
+
     try {
-      await taskApi.update(taskId, updates)
-      router.refresh()
+      const { task } = await taskApi.update(taskId, updates)
+      setLocalTaskGroups((currentTaskGroups) => applyConfirmedTaskUpdate(currentTaskGroups, task))
       onTaskUpdate?.()
     } catch (error) {
+      setLocalTaskGroups(previousTaskGroups)
       console.error('Failed to update task:', error)
       alert('更新任务失败')
     }
@@ -47,7 +142,11 @@ export default function TaskList({
 
     try {
       await taskApi.delete(taskId)
-      router.refresh()
+      setLocalTaskGroups((currentTaskGroups) =>
+        groupTasksForDisplay(
+          flattenTaskGroups(currentTaskGroups).filter((task) => task.id !== taskId)
+        )
+      )
       onTaskUpdate?.()
     } catch (error) {
       console.error('Failed to delete task:', error)
@@ -56,7 +155,7 @@ export default function TaskList({
   }
 
   // 如果任务列表为空，显示空状态提示
-  if (taskGroups.length === 0) {
+  if (localTaskGroups.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-12 text-center">
         <div className="text-gray-400 mb-4">
@@ -88,7 +187,7 @@ export default function TaskList({
   return (
     <div className="space-y-8">
       {(['PREPARATION', 'WEDDING_DAY'] as const).map((phase) => {
-        const groups = taskGroups.filter((group) => group.phase === phase)
+        const groups = localTaskGroups.filter((group) => group.phase === phase)
         if (groups.length === 0) {
           return null
         }
@@ -105,7 +204,7 @@ export default function TaskList({
                 <div className="space-y-3">
                   {group.tasks.map((task) => (
                     <TaskItem
-                      key={task.id}
+                      key={`${task.id}:${task.updatedAt}`}
                       task={task}
                       isOwner={isOwner}
                       participants={participants}

@@ -138,7 +138,7 @@ export default function TaskItem({ task, isOwner, participants = [], onUpdate, o
               value={timeFrame}
               onChange={(e) => setTimeFrame(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500"
-              placeholder={phase === 'WEDDING_DAY' ? '例如：仪式、宴席' : '例如：3个月、1周'}
+              placeholder={phase === 'WEDDING_DAY' ? '例如：接亲、返家、酒店准备' : '例如：3个月、1周'}
             />
             {participants.length > 0 && (
               <select
@@ -217,7 +217,7 @@ export default function TaskItem({ task, isOwner, participants = [], onUpdate, o
               <div className="flex items-center gap-2">
                 <label className="text-gray-600">分配给：</label>
                 <select
-                  value={task.assignedUserId || ''}
+                  value={assignedUserId}
                   onChange={(e) => handleAssignedUserChange(e.target.value)}
                   className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 bg-white"
                 >
